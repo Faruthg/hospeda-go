@@ -70,6 +70,7 @@ const ACCOUNTS_STORAGE_KEY = 'hospedago.demo.accounts';
 const SESSION_STORAGE_KEY = 'hospedago.demo.session';
 const RESERVATIONS_STORAGE_KEY = 'hospedago.demo.reservations';
 const BOOKINGS_STORAGE_KEY = 'hospedago.demo.bookings';
+const NOTIFICATIONS_STORAGE_KEY = 'hospedago.demo.notifications';
 
 const loadDemoAccounts = (): DemoAccount[] => {
   const saved = localStorage.getItem(ACCOUNTS_STORAGE_KEY);
@@ -79,13 +80,66 @@ const loadDemoAccounts = (): DemoAccount[] => {
   if (!Array.isArray(parsed) || parsed.some(account =>
     !account || typeof account.name !== 'string' || typeof account.email !== 'string' ||
     typeof account.password !== 'string' ||
-    !['guest', 'host', 'admin'].includes(account.role)
+    !['guest', 'host', 'admin'].includes(account.role) ||
+    (account.mustChangePassword !== undefined && typeof account.mustChangePassword !== 'boolean')
   )) {
     throw new Error('No se pudieron leer las cuentas de prueba guardadas en este navegador.');
   }
 
-  const demoEmails = new Set(DEMO_ACCOUNTS.map(account => account.email));
-  return [...DEMO_ACCOUNTS, ...(parsed as DemoAccount[]).filter(account => !demoEmails.has(account.email))];
+  const savedAccounts = parsed as DemoAccount[];
+  const savedByEmail = Object.create(null) as Record<string, DemoAccount>;
+  savedAccounts.forEach(account => {
+    savedByEmail[account.email.toLowerCase()] = account;
+  });
+  const demoEmails = new Set(DEMO_ACCOUNTS.map(account => account.email.toLowerCase()));
+  return [
+    ...DEMO_ACCOUNTS.map(account => savedByEmail[account.email.toLowerCase()] ?? account),
+    ...savedAccounts.filter(account => !demoEmails.has(account.email.toLowerCase()))
+  ];
+};
+
+const loadNotifications = (): PushNotification[] => {
+  const saved = localStorage.getItem(NOTIFICATIONS_STORAGE_KEY);
+  if (!saved) return INITIAL_NOTIFICATIONS;
+
+  const parsed: unknown = JSON.parse(saved);
+  if (!Array.isArray(parsed) || parsed.some(notification =>
+    !notification || typeof notification.id !== 'string' ||
+    !['booking', 'payment', 'chat', 'ride', 'review', 'account'].includes(notification.type) ||
+    typeof notification.title !== 'string' || typeof notification.message !== 'string' ||
+    typeof notification.timestamp !== 'string' || typeof notification.read !== 'boolean' ||
+    (notification.recipientRole !== undefined &&
+      !['guest', 'host', 'admin'].includes(notification.recipientRole)) ||
+    (notification.recipientEmail !== undefined && typeof notification.recipientEmail !== 'string')
+  )) {
+    throw new Error('No se pudieron leer las notificaciones guardadas en este navegador.');
+  }
+  return parsed as PushNotification[];
+};
+
+const createTemporaryPassword = () => {
+  const characterSets = [
+    'ABCDEFGHJKLMNPQRSTUVWXYZ',
+    'abcdefghijkmnopqrstuvwxyz',
+    '23456789',
+    '!@#$%&*?'
+  ];
+  const allCharacters = characterSets.join('');
+  const randomIndex = (limit: number) => {
+    const values = new Uint32Array(1);
+    crypto.getRandomValues(values);
+    return (values[0] ?? 0) % limit;
+  };
+  const characters = characterSets.map(set => set[randomIndex(set.length)] ?? '');
+
+  while (characters.length < 12) {
+    characters.push(allCharacters[randomIndex(allCharacters.length)] ?? '');
+  }
+  for (let index = characters.length - 1; index > 0; index -= 1) {
+    const swapIndex = randomIndex(index + 1);
+    [characters[index], characters[swapIndex]] = [characters[swapIndex] ?? '', characters[index] ?? ''];
+  }
+  return characters.join('');
 };
 
 const loadServiceReservations = (): GuestReservation[] => {
@@ -159,9 +213,13 @@ export default function App() {
   const [experiences, setExperiences] = useState<Experience[]>(INITIAL_EXPERIENCES);
   const [bookings, setBookings] = useState<Booking[]>(loadBookings);
   const [conversations, setConversations] = useState<Conversation[]>(INITIAL_CONVERSATIONS);
-  const [notifications, setNotifications] = useState<PushNotification[]>(INITIAL_NOTIFICATIONS);
+  const [notifications, setNotifications] = useState<PushNotification[]>(loadNotifications);
   const [transactions, setTransactions] = useState<Transaction[]>(INITIAL_TRANSACTIONS);
   const [serviceReservations, setServiceReservations] = useState<GuestReservation[]>(loadServiceReservations);
+  const visibleNotifications = notifications.filter(notification => {
+    if (notification.recipientEmail) return notification.recipientEmail === currentUser?.email;
+    return !!currentUser && (!notification.recipientRole || notification.recipientRole === currentRole);
+  });
 
   // Modals & Interactive Overlays
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
@@ -189,6 +247,10 @@ export default function App() {
     localStorage.setItem(BOOKINGS_STORAGE_KEY, JSON.stringify(bookings));
   }, [bookings]);
 
+  useEffect(() => {
+    localStorage.setItem(NOTIFICATIONS_STORAGE_KEY, JSON.stringify(notifications));
+  }, [notifications]);
+
   // Sync dark mode class
   useEffect(() => {
     if (darkMode) {
@@ -208,7 +270,10 @@ export default function App() {
       read: false
     };
     setNotifications(prev => [created, ...prev]);
-    setLatestToast(created);
+    const belongsToCurrentUser = created.recipientEmail
+      ? created.recipientEmail === currentUser?.email
+      : !!currentUser && (!created.recipientRole || created.recipientRole === currentRole);
+    if (belongsToCurrentUser) setLatestToast(created);
   };
 
   // Filter properties according to search, city in Colombia, type, and price
@@ -266,7 +331,9 @@ export default function App() {
       type: 'booking',
       title: '¡Reserva Confirmada en Colombia!',
       message: `Tu estancia en "${bookingData.propertyTitle}" está lista. Código: ${newCode}.`,
-      actionUrl: 'bookings'
+      actionUrl: 'bookings',
+      recipientRole: 'guest',
+      recipientEmail: guest.email
     });
     return newCode;
   };
@@ -293,7 +360,9 @@ export default function App() {
       type: 'booking',
       title: '¡Experiencia Turística Reservada!',
       message: `Reserva para "${experience.title}" (${time}) confirmada para ${spots} personas.`,
-      actionUrl: 'experiences'
+      actionUrl: 'experiences',
+      recipientRole: 'guest',
+      recipientEmail: guest.email
     });
   };
 
@@ -309,7 +378,9 @@ export default function App() {
       type: 'ride',
       title: 'Vehículo Asignado en Colombia',
       message: `${ride.driver.name} en camino en ${ride.driver.vehicle} (${ride.driver.plate}). ETA: 4 min.`,
-      actionUrl: 'rides'
+      actionUrl: 'rides',
+      recipientRole: 'guest',
+      recipientEmail: guest.email
     });
   };
 
@@ -355,6 +426,7 @@ export default function App() {
 
   const handleAuthSuccess = (signedInAccount: DemoAccount, isNewAccount: boolean): boolean => {
     if (pendingAction && signedInAccount.role !== 'guest') return false;
+    if (signedInAccount.mustChangePassword) return false;
 
     if (isNewAccount) setAccounts(previous => [...previous, signedInAccount]);
     setSessionEmail(signedInAccount.email);
@@ -380,11 +452,57 @@ export default function App() {
     return true;
   };
 
+  const handleChangePassword = (email: string, password: string): DemoAccount | null => {
+    const existingAccount = accounts.find(candidate => candidate.email === email);
+    if (!existingAccount) return null;
+
+    const updatedAccount: DemoAccount = {
+      ...existingAccount,
+      password,
+      mustChangePassword: false
+    };
+    setAccounts(previous => previous.map(candidate =>
+      candidate.email === email ? updatedAccount : candidate
+    ));
+    triggerPushNotification({
+      type: 'account',
+      title: 'Contraseña actualizada',
+      message: 'Tu nueva contraseña quedó activa para próximos inicios de sesión.',
+      recipientRole: updatedAccount.role,
+      recipientEmail: updatedAccount.email
+    });
+    return updatedAccount;
+  };
+
+  const handleGenerateTemporaryPassword = (email: string): string | null => {
+    if (currentRole !== 'admin' || currentUser?.email === email) return null;
+
+    const existingAccount = accounts.find(candidate => candidate.email === email);
+    if (!existingAccount) return null;
+
+    const temporaryPassword = createTemporaryPassword();
+    setAccounts(previous => previous.map(candidate =>
+      candidate.email === email
+        ? { ...candidate, password: temporaryPassword, mustChangePassword: true }
+        : candidate
+    ));
+    triggerPushNotification({
+      type: 'account',
+      title: 'Restablecimiento de contraseña',
+      message: 'El administrador restableció tu acceso. Inicia sesión con la clave temporal que te entregó y define una nueva contraseña.',
+      recipientRole: existingAccount.role,
+      recipientEmail: existingAccount.email
+    });
+    return temporaryPassword;
+  };
+
   const handleLogout = () => {
     setSessionEmail(null);
     setActiveGuestTab('stays');
     setSelectedProperty(null);
     setPendingAction(null);
+    setLatestToast(null);
+    setIsNotificationsOpen(false);
   };
 
   // Chat message sending
@@ -407,7 +525,8 @@ export default function App() {
             type: 'chat',
             title: `Nuevo mensaje de ${conv.otherParty.name}`,
             message: text,
-            actionUrl: 'chat'
+            actionUrl: 'chat',
+            recipientRole: 'guest'
           });
         }
 
@@ -438,7 +557,8 @@ export default function App() {
       type: 'booking',
       title: 'Alojamiento Publicado con RNT',
       message: `"${newProp.title}" ya está activo en Hospeda&Go con verificación RNT.`,
-      actionUrl: 'properties'
+      actionUrl: 'properties',
+      recipientRole: 'host'
     });
   };
 
@@ -465,7 +585,8 @@ export default function App() {
       type: 'payment',
       title: 'Liquidación Consignada',
       message: `Transferencia realizada a través de ${method}.`,
-      actionUrl: 'payments'
+      actionUrl: 'payments',
+      recipientRole: 'host'
     });
   };
 
@@ -488,7 +609,8 @@ export default function App() {
       type: 'review',
       title: 'Reseña Verificada Registrada',
       message: `${review.author} valoró su estancia en Colombia con ${review.rating} estrellas.`,
-      actionUrl: 'stays'
+      actionUrl: 'stays',
+      recipientRole: 'host'
     });
   };
 
@@ -525,7 +647,7 @@ export default function App() {
         }}
         currency={currency}
         setCurrency={setCurrency}
-        unreadCount={notifications.filter(n => !n.read).length}
+        unreadCount={visibleNotifications.filter(n => !n.read).length}
         unreadMessagesCount={conversations.reduce((sum, c) => sum + c.unreadCount, 0)}
         openNotifications={() => setIsNotificationsOpen(true)}
         openChat={() => {
@@ -749,12 +871,16 @@ export default function App() {
             activeAdminTab={activeAdminTab}
             setActiveAdminTab={setActiveAdminTab}
             properties={properties}
+            accounts={accounts}
+            currentAdminEmail={currentUser?.email ?? ''}
+            onGenerateTemporaryPassword={handleGenerateTemporaryPassword}
             onApproveProperty={(id) => {
               triggerPushNotification({
                 type: 'booking',
                 title: 'RNT Verificado y Aprobado',
                 message: `El anuncio ha sido activado en la plataforma Hospeda&Go.`,
-                actionUrl: 'verifications'
+                actionUrl: 'verifications',
+                recipientRole: 'admin'
               });
             }}
             onRejectProperty={(id) => {
@@ -762,7 +888,8 @@ export default function App() {
                 type: 'booking',
                 title: 'Solicitud RNT Rechazada',
                 message: `Se ha notificado al prestador para corregir documentos ante MinCIT.`,
-                actionUrl: 'verifications'
+                actionUrl: 'verifications',
+                recipientRole: 'admin'
               });
             }}
           />
@@ -795,6 +922,7 @@ export default function App() {
             setPendingAction(null);
           }}
           onSuccess={handleAuthSuccess}
+          onChangePassword={handleChangePassword}
         />
       )}
 
@@ -816,15 +944,19 @@ export default function App() {
       <NotificationCenter
         isOpen={isNotificationsOpen}
         onClose={() => setIsNotificationsOpen(false)}
-        notifications={notifications}
+        notifications={visibleNotifications}
         onMarkAllAsRead={() => {
-          setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+          const visibleIds = new Set(visibleNotifications.map(notification => notification.id));
+          setNotifications(prev => prev.map(notification =>
+            visibleIds.has(notification.id) ? { ...notification, read: true } : notification
+          ));
         }}
         onMarkAsRead={(id) => {
           setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
         }}
         onClearNotifications={() => {
-          setNotifications([]);
+          const visibleIds = new Set(visibleNotifications.map(notification => notification.id));
+          setNotifications(prev => prev.filter(notification => !visibleIds.has(notification.id)));
         }}
         onNavigateAction={(actionUrl) => {
           if (actionUrl === 'chat') {
@@ -848,7 +980,7 @@ export default function App() {
           setActiveTab={setActiveGuestTab}
           isMapVisible={viewMode === 'map'}
           setIsMapVisible={(show) => setViewMode(show ? 'map' : 'split')}
-          unreadCount={notifications.filter(n => !n.read).length}
+          unreadCount={visibleNotifications.filter(n => !n.read).length}
         />
       )}
 

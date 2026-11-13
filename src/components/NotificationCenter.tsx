@@ -8,7 +8,8 @@ import {
   Car, 
   Sparkles,
   ExternalLink,
-  Trash2
+  Trash2,
+  KeyRound
 } from 'lucide-react';
 import { PushNotification } from '../types';
 
@@ -31,7 +32,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
   onClearNotifications,
   onNavigateAction
 }) => {
-  const [filter, setFilter] = useState<'all' | 'booking' | 'payment' | 'chat' | 'ride'>('all');
+  const [filter, setFilter] = useState<'all' | 'booking' | 'payment' | 'chat' | 'ride' | 'account'>('all');
 
   if (!isOpen) return null;
 
@@ -48,6 +49,8 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
         return <MessageSquare className="w-4 h-4 text-violet-600 dark:text-violet-400" />;
       case 'ride':
         return <Car className="w-4 h-4 text-amber-600 dark:text-amber-400" />;
+      case 'account':
+        return <KeyRound className="w-4 h-4 text-purple-600 dark:text-purple-400" />;
       default:
         return <Sparkles className="w-4 h-4 text-slate-600 dark:text-slate-400" />;
     }
@@ -94,13 +97,14 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
         {/* Filter Bar (Segmented Controls §1.A) */}
         <div className="p-3 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
           <div className="flex items-center gap-1 overflow-x-auto pb-1 text-xs">
-            {(['all', 'booking', 'payment', 'chat', 'ride'] as const).map(tabKey => {
+            {(['all', 'booking', 'payment', 'chat', 'ride', 'account'] as const).map(tabKey => {
               const labels = {
                 all: 'Todas',
                 booking: 'Reservas',
                 payment: 'Pagos',
                 chat: 'Chat',
-                ride: 'Viajes'
+                ride: 'Viajes',
+                account: 'Cuenta'
               };
               return (
                 <button

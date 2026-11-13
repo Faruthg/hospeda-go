@@ -26,9 +26,10 @@ import {
   X,
   Sparkles,
   Percent,
-  Calculator
+  Calculator,
+  KeyRound
 } from 'lucide-react';
-import { Property, Booking, Transaction, UserRole } from '../types';
+import { DemoAccount, Property, Booking, Transaction, UserRole } from '../types';
 import { soundManager } from '../utils/audio';
 
 interface ManagedUser {
@@ -49,6 +50,9 @@ interface AdminSuperDashboardProps {
   activeAdminTab: 'verifications' | 'users' | 'commissions' | 'disputes' | 'analytics';
   setActiveAdminTab: (tab: 'verifications' | 'users' | 'commissions' | 'disputes' | 'analytics') => void;
   properties: Property[];
+  accounts: DemoAccount[];
+  currentAdminEmail: string;
+  onGenerateTemporaryPassword: (email: string) => string | null;
   onApproveProperty: (id: string) => void;
   onRejectProperty: (id: string) => void;
 }
@@ -57,6 +61,9 @@ export const AdminSuperDashboard: React.FC<AdminSuperDashboardProps> = ({
   activeAdminTab,
   setActiveAdminTab,
   properties,
+  accounts,
+  currentAdminEmail,
+  onGenerateTemporaryPassword,
   onApproveProperty,
   onRejectProperty
 }) => {
@@ -142,6 +149,8 @@ export const AdminSuperDashboard: React.FC<AdminSuperDashboardProps> = ({
   // Selected User for "Gestionar Perfil" Modal
   const [selectedUserToEdit, setSelectedUserToEdit] = useState<ManagedUser | null>(null);
   const [profileUpdatedMsg, setProfileUpdatedMsg] = useState<string | null>(null);
+  const [generatedTemporaryPassword, setGeneratedTemporaryPassword] = useState<{ email: string; password: string } | null>(null);
+  const [passwordResetError, setPasswordResetError] = useState<string | null>(null);
 
   // Pending Verifications
   const [pendingVerifications, setPendingVerifications] = useState([
@@ -380,6 +389,74 @@ export const AdminSuperDashboard: React.FC<AdminSuperDashboardProps> = ({
               {usersList.length} cuentas registradas
             </span>
           </div>
+
+          <section className="space-y-4 rounded-3xl border border-purple-200 bg-purple-50/60 p-5 dark:border-purple-900/60 dark:bg-purple-950/20">
+            <div className="flex items-start gap-3">
+              <div className="rounded-xl bg-purple-100 p-2 text-purple-700 dark:bg-purple-900/60 dark:text-purple-300">
+                <KeyRound className="h-4 w-4" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white">Restablecer acceso a una cuenta</h3>
+                <p className="mt-1 text-xs text-slate-600 dark:text-slate-400">
+                  Genera una clave temporal para huéspedes, anfitriones u otros administradores. La persona deberá cambiarla al iniciar sesión.
+                </p>
+              </div>
+            </div>
+
+            {generatedTemporaryPassword && (
+              <div className="rounded-2xl border border-emerald-200 bg-white p-4 dark:border-emerald-900 dark:bg-slate-900">
+                <p className="text-xs font-bold text-emerald-800 dark:text-emerald-300">
+                  Clave temporal para {generatedTemporaryPassword.email}
+                </p>
+                <p className="mt-2 select-all rounded-lg bg-slate-100 px-3 py-2 font-mono text-base font-bold tracking-wider text-slate-900 dark:bg-slate-800 dark:text-white">
+                  {generatedTemporaryPassword.password}
+                </p>
+                <p className="mt-2 text-[11px] text-slate-500 dark:text-slate-400">
+                  Entrégala directamente al usuario por un canal seguro. Este prototipo no envía correos.
+                </p>
+              </div>
+            )}
+
+            {passwordResetError && (
+              <p role="alert" className="text-xs font-semibold text-rose-600">{passwordResetError}</p>
+            )}
+
+            <div className="grid gap-2 sm:grid-cols-2">
+              {accounts.map(account => (
+                <div
+                  key={account.email}
+                  className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900"
+                >
+                  <div className="min-w-0">
+                    <p className="truncate text-xs font-bold text-slate-900 dark:text-white">{account.name}</p>
+                    <p className="truncate text-[11px] text-slate-500 dark:text-slate-400">{account.email}</p>
+                    <p className="mt-1 text-[10px] font-semibold text-purple-700 dark:text-purple-300">
+                      {account.role === 'admin' ? 'Administrador' : account.role === 'host' ? 'Anfitrión' : 'Huésped'}
+                      {account.mustChangePassword && ' · Cambio pendiente'}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    disabled={account.email === currentAdminEmail}
+                    onClick={() => {
+                      setPasswordResetError(null);
+                      setGeneratedTemporaryPassword(null);
+                      const password = onGenerateTemporaryPassword(account.email);
+                      if (!password) {
+                        setPasswordResetError('No se pudo generar la clave temporal para esta cuenta.');
+                        return;
+                      }
+                      setGeneratedTemporaryPassword({ email: account.email, password });
+                    }}
+                    className="shrink-0 rounded-lg bg-purple-700 px-3 py-2 text-[11px] font-bold text-white transition-colors hover:bg-purple-600 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-600 dark:disabled:bg-slate-700 dark:disabled:text-slate-400"
+                    title={account.email === currentAdminEmail ? 'No puedes restablecer la cuenta que tiene esta sesión' : 'Generar contraseña temporal'}
+                  >
+                    {account.email === currentAdminEmail ? 'Sesión actual' : 'Generar clave'}
+                  </button>
+                </div>
+              ))}
+            </div>
+          </section>
 
           <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-xs">
             <div className="overflow-x-auto">

@@ -10,6 +10,7 @@ export interface AuthUser {
 
 export interface DemoAccount extends AuthUser {
   password: string;
+  mustChangePassword?: boolean;
 }
 
 export interface GuestReservation {
@@ -215,12 +216,14 @@ export interface Conversation {
 
 export interface PushNotification {
   id: string;
-  type: 'booking' | 'payment' | 'chat' | 'ride' | 'review';
+  type: 'booking' | 'payment' | 'chat' | 'ride' | 'review' | 'account';
   title: string;
   message: string;
   timestamp: string;
   read: boolean;
   actionUrl?: string;
+  recipientRole?: UserRole;
+  recipientEmail?: string;
 }
 
 export interface Transaction {

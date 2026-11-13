@@ -640,7 +640,9 @@ export const INITIAL_NOTIFICATIONS: PushNotification[] = [
     message: 'Tu estancia en Casa Colonial Getsemaní ha sido confirmada con RNT verificado #48291.',
     timestamp: 'Hace 8 min',
     read: false,
-    actionUrl: 'bookings'
+    actionUrl: 'bookings',
+    recipientRole: 'guest',
+    recipientEmail: 'guest@hospedago.com'
   },
   {
     id: 'notif-2',
@@ -649,7 +651,8 @@ export const INITIAL_NOTIFICATIONS: PushNotification[] = [
     message: 'Se han consignado $4,800,000 COP a tu cuenta Bancolombia.',
     timestamp: 'Hace 35 min',
     read: false,
-    actionUrl: 'payments'
+    actionUrl: 'payments',
+    recipientRole: 'host'
   }
 ];
 

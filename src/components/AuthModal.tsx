@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Building2, LockKeyhole, LogIn, UserPlus, X } from 'lucide-react';
+import { Building2, KeyRound, LockKeyhole, LogIn, UserPlus, X } from 'lucide-react';
 import { DemoAccount, UserRole } from '../types';
 import { DEMO_ACCOUNTS } from '../data/demoAccounts';
 
@@ -8,20 +8,23 @@ interface AuthModalProps {
   accounts: DemoAccount[];
   onClose: () => void;
   onSuccess: (account: DemoAccount, isNewAccount: boolean) => boolean;
+  onChangePassword: (email: string, password: string) => DemoAccount | null;
 }
 
 export const AuthModal: React.FC<AuthModalProps> = ({
   initialMode,
   accounts,
   onClose,
-  onSuccess
+  onSuccess,
+  onChangePassword
 }) => {
-  const [mode, setMode] = useState(initialMode);
+  const [mode, setMode] = useState<'login' | 'register' | 'changePassword'>(initialMode);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [role, setRole] = useState<Exclude<UserRole, 'admin'>>('guest');
+  const [resetAccount, setResetAccount] = useState<DemoAccount | null>(null);
   const [error, setError] = useState('');
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
@@ -37,7 +40,44 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         setError('Correo o contraseña incorrectos.');
         return;
       }
+      if (account.mustChangePassword) {
+        setResetAccount(account);
+        setPassword('');
+        setConfirmPassword('');
+        setMode('changePassword');
+        return;
+      }
       if (!onSuccess(account, false)) {
+        setError('Para continuar con esta reserva necesitas una cuenta de huésped.');
+      }
+      return;
+    }
+
+    if (mode === 'changePassword') {
+      if (!resetAccount) {
+        setError('Vuelve a iniciar sesión con la contraseña temporal.');
+        setMode('login');
+        return;
+      }
+      if (password.length < 8) {
+        setError('La nueva contraseña debe tener al menos 8 caracteres.');
+        return;
+      }
+      if (password === resetAccount.password) {
+        setError('La nueva contraseña debe ser diferente a la temporal.');
+        return;
+      }
+      if (password !== confirmPassword) {
+        setError('Las contraseñas no coinciden.');
+        return;
+      }
+
+      const updatedAccount = onChangePassword(resetAccount.email, password);
+      if (!updatedAccount) {
+        setError('No se pudo actualizar la contraseña. Inicia sesión de nuevo.');
+        return;
+      }
+      if (!onSuccess(updatedAccount, false)) {
         setError('Para continuar con esta reserva necesitas una cuenta de huésped.');
       }
       return;
@@ -71,6 +111,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
   const changeMode = (nextMode: 'login' | 'register') => {
     setMode(nextMode);
+    setResetAccount(null);
     setError('');
   };
 
@@ -84,12 +125,18 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 <Building2 className="w-5 h-5" />
               </div>
               <h2 className="text-xl font-extrabold text-slate-900 dark:text-white">
-                {mode === 'login' ? 'Inicia sesión' : 'Crea tu cuenta'}
+                {mode === 'login'
+                  ? 'Inicia sesión'
+                  : mode === 'register'
+                    ? 'Crea tu cuenta'
+                    : 'Cambia tu contraseña'}
               </h2>
               <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
                 {mode === 'login'
                   ? 'Accede al espacio correspondiente a tu tipo de cuenta.'
-                  : 'Regístrate para confirmar y consultar tus reservas.'}
+                  : mode === 'register'
+                    ? 'Regístrate para confirmar y consultar tus reservas.'
+                    : 'La contraseña temporal ya fue validada. Define una contraseña nueva para continuar.'}
               </p>
             </div>
             <button onClick={onClose} className="p-2 text-slate-400 hover:text-slate-700 dark:hover:text-white" aria-label="Cerrar">
@@ -97,20 +144,22 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             </button>
           </div>
 
-          <div className="flex p-1 bg-slate-100 dark:bg-slate-800 rounded-xl mt-5 text-sm font-bold">
-            <button
-              onClick={() => changeMode('login')}
-              className={`flex-1 py-2 rounded-lg ${mode === 'login' ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm' : 'text-slate-500'}`}
-            >
-              Ingresar
-            </button>
-            <button
-              onClick={() => changeMode('register')}
-              className={`flex-1 py-2 rounded-lg ${mode === 'register' ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm' : 'text-slate-500'}`}
-            >
-              Registrarme
-            </button>
-          </div>
+          {mode !== 'changePassword' && (
+            <div className="flex p-1 bg-slate-100 dark:bg-slate-800 rounded-xl mt-5 text-sm font-bold">
+              <button
+                onClick={() => changeMode('login')}
+                className={`flex-1 py-2 rounded-lg ${mode === 'login' ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm' : 'text-slate-500'}`}
+              >
+                Ingresar
+              </button>
+              <button
+                onClick={() => changeMode('register')}
+                className={`flex-1 py-2 rounded-lg ${mode === 'register' ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm' : 'text-slate-500'}`}
+              >
+                Registrarme
+              </button>
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} className="space-y-3 mt-5">
             {mode === 'register' && (
@@ -150,7 +199,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               />
             </label>
             <label className="block text-xs font-bold text-slate-600 dark:text-slate-300">
-              Contraseña
+              {mode === 'changePassword' ? 'Nueva contraseña' : 'Contraseña'}
               <input
                 type="password"
                 value={password}
@@ -160,7 +209,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 required
               />
             </label>
-            {mode === 'register' && (
+            {mode !== 'login' && (
               <label className="block text-xs font-bold text-slate-600 dark:text-slate-300">
                 Confirmar contraseña
                 <input
@@ -180,28 +229,42 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               type="submit"
               className="w-full flex items-center justify-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm py-3 transition-colors"
             >
-              {mode === 'login' ? <LogIn className="w-4 h-4" /> : <UserPlus className="w-4 h-4" />}
-              {mode === 'login' ? 'Ingresar' : 'Crear cuenta'}
+              {mode === 'login'
+                ? <LogIn className="w-4 h-4" />
+                : mode === 'register'
+                  ? <UserPlus className="w-4 h-4" />
+                  : <KeyRound className="w-4 h-4" />}
+              {mode === 'login' ? 'Ingresar' : mode === 'register' ? 'Crear cuenta' : 'Guardar nueva contraseña'}
             </button>
           </form>
 
-          <div className="mt-5 rounded-2xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 p-3.5">
-            <div className="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-200">
-              <LockKeyhole className="w-3.5 h-3.5 text-emerald-600" />
-              Cuentas de prueba
+          {mode !== 'changePassword' && (
+            <div className="mt-5 rounded-2xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 p-3.5">
+              <div className="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-200">
+                <LockKeyhole className="w-3.5 h-3.5 text-emerald-600" />
+                Cuentas de prueba
+              </div>
+              <div className="grid gap-1 mt-2 text-[11px] text-slate-600 dark:text-slate-300">
+                {DEMO_ACCOUNTS.map(demoAccount => {
+                  const currentAccount = accounts.find(account => account.email === demoAccount.email);
+                  const credentialLabel = currentAccount?.mustChangePassword
+                    ? 'Clave temporal entregada por el administrador'
+                    : currentAccount?.password === demoAccount.password
+                      ? demoAccount.password
+                      : 'Contraseña modificada en este navegador';
+                  return (
+                    <div key={demoAccount.email} className="flex flex-wrap justify-between gap-x-3">
+                      <span>{demoAccount.role === 'admin' ? 'Administrador' : demoAccount.role === 'host' ? 'Anfitrión' : 'Huésped'}</span>
+                      <span className="font-mono">{demoAccount.email} · {credentialLabel}</span>
+                    </div>
+                  );
+                })}
+              </div>
+              <p className="text-[10px] leading-relaxed text-amber-700 dark:text-amber-300 mt-2">
+                Prototipo local: las cuentas y contraseñas se guardan en este navegador. No uses datos reales; no es autenticación segura para producción.
+              </p>
             </div>
-            <div className="grid gap-1 mt-2 text-[11px] text-slate-600 dark:text-slate-300">
-              {DEMO_ACCOUNTS.map(account => (
-                <div key={account.email} className="flex flex-wrap justify-between gap-x-3">
-                  <span>{account.role === 'admin' ? 'Administrador' : account.role === 'host' ? 'Anfitrión' : 'Huésped'}</span>
-                  <span className="font-mono">{account.email} · {account.password}</span>
-                </div>
-              ))}
-            </div>
-            <p className="text-[10px] leading-relaxed text-amber-700 dark:text-amber-300 mt-2">
-              Prototipo local: las cuentas y contraseñas se guardan en este navegador. No uses datos reales; no es autenticación segura para producción.
-            </p>
-          </div>
+          )}
         </div>
       </div>
     </div>

@@ -22,12 +22,13 @@ View your app in AI Studio: https://ai.studio/apps/48401e8c-57e8-453b-bd29-cc633
 ## Acceso de demostración
 
 El prototipo ofrece registro e inicio de sesión local. Las cuentas se guardan en el almacenamiento del navegador y las reservas se vinculan al correo de la cuenta.
+El administrador puede generar una contraseña temporal para otra cuenta; el usuario debe cambiarla al iniciar sesión. La clave debe entregarse manualmente y las notificaciones se filtran por rol y destinatario dentro del mismo navegador.
 
 - Huésped: `guest@hospedago.com` / `Guest123!`
 - Anfitrión: `host@hospedago.com` / `Host123!`
 - Administrador: `admin@hospedago.com` / `Admin123!`
 
-Este flujo no valida identidades en un servidor y no es seguro para producción. Sustituye la autenticación local por un proveedor/backend antes de publicar la aplicación.
+Las credenciales listadas son las iniciales; después de un restablecimiento usa la contraseña temporal y luego la nueva contraseña guardada en ese navegador. Este flujo no valida identidades en un servidor ni envía contraseñas por correo, y no es seguro para producción. Sustituye la autenticación local por un proveedor/backend antes de publicar la aplicación.
 
 ## Publicar una vista de prueba en GitHub Pages
 
