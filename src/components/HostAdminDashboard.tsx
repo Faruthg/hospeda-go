@@ -31,6 +31,8 @@ import {
 } from 'lucide-react';
 import { Property, Booking, Transaction } from '../types';
 import { soundManager } from '../utils/audio';
+import villaPhoto from '../assets/images/hero_stay_luxury_villa_1794422533159.jpg';
+import hotelPhoto from '../assets/images/stay_boutique_hotel_room_1794422533615.jpg';
 
 interface HostAdminDashboardProps {
   properties: Property[];
@@ -125,8 +127,8 @@ export const HostAdminDashboard: React.FC<HostAdminDashboardProps> = ({
       rntStatus: 'verified',
       amenities: ['WiFi de alta velocidad', 'Aire acondicionado', 'Piscina / Jacuzzi', 'Cerradura inteligente'],
       photos: [
-        '/src/assets/images/hero_stay_luxury_villa_1794422533159.jpg',
-        '/src/assets/images/stay_boutique_hotel_room_1794422533615.jpg'
+        villaPhoto,
+        hotelPhoto
       ],
       host: {
         id: 'host-me',

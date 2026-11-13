@@ -1,4 +1,8 @@
 import { Property, Experience, Booking, Conversation, PushNotification, Transaction, RideOption, ColombiaDestination } from '../types';
+import villaPhoto from '../assets/images/hero_stay_luxury_villa_1794422533159.jpg';
+import hotelPhoto from '../assets/images/stay_boutique_hotel_room_1794422533615.jpg';
+import loftPhoto from '../assets/images/stay_cozy_urban_loft_1794422534491.jpg';
+import gastronomyPhoto from '../assets/images/exp_local_gastronomy_tour_1794422535302.jpg';
 
 export const COLOMBIA_DESTINATIONS: ColombiaDestination[] = [
   {
@@ -90,9 +94,9 @@ export const INITIAL_PROPERTIES: Property[] = [
       'Planta eléctrica total'
     ],
     photos: [
-      '/src/assets/images/hero_stay_luxury_villa_1794422533159.jpg',
-      '/src/assets/images/stay_boutique_hotel_room_1794422533615.jpg',
-      '/src/assets/images/stay_cozy_urban_loft_1794422534491.jpg'
+      villaPhoto,
+      hotelPhoto,
+      loftPhoto
     ],
     host: {
       id: 'host-101',
@@ -176,9 +180,9 @@ export const INITIAL_PROPERTIES: Property[] = [
       'Restaurante de autor'
     ],
     photos: [
-      '/src/assets/images/stay_boutique_hotel_room_1794422533615.jpg',
-      '/src/assets/images/hero_stay_luxury_villa_1794422533159.jpg',
-      '/src/assets/images/stay_cozy_urban_loft_1794422534491.jpg'
+      hotelPhoto,
+      villaPhoto,
+      loftPhoto
     ],
     host: {
       id: 'host-102',
@@ -257,9 +261,9 @@ export const INITIAL_PROPERTIES: Property[] = [
       'Smart TV 65" 4K OLED'
     ],
     photos: [
-      '/src/assets/images/stay_cozy_urban_loft_1794422534491.jpg',
-      '/src/assets/images/stay_boutique_hotel_room_1794422533615.jpg',
-      '/src/assets/images/hero_stay_luxury_villa_1794422533159.jpg'
+      loftPhoto,
+      hotelPhoto,
+      villaPhoto
     ],
     host: {
       id: 'host-103',
@@ -320,9 +324,9 @@ export const INITIAL_PROPERTIES: Property[] = [
       'Guardaequipaje seguro'
     ],
     photos: [
-      '/src/assets/images/stay_cozy_urban_loft_1794422534491.jpg',
-      '/src/assets/images/exp_local_gastronomy_tour_1794422535302.jpg',
-      '/src/assets/images/stay_boutique_hotel_room_1794422533615.jpg'
+      loftPhoto,
+      gastronomyPhoto,
+      hotelPhoto
     ],
     host: {
       id: 'host-104',
@@ -383,9 +387,9 @@ export const INITIAL_PROPERTIES: Property[] = [
       'Parqueadero gratuito'
     ],
     photos: [
-      '/src/assets/images/hero_stay_luxury_villa_1794422533159.jpg',
-      '/src/assets/images/stay_boutique_hotel_room_1794422533615.jpg',
-      '/src/assets/images/stay_cozy_urban_loft_1794422534491.jpg'
+      villaPhoto,
+      hotelPhoto,
+      loftPhoto
     ],
     host: {
       id: 'host-105',
@@ -436,7 +440,7 @@ export const INITIAL_EXPERIENCES: Experience[] = [
       'Cata guiada de rones añejos colombianos',
       'Recorrido histórico de murales con anécdotas'
     ],
-    photo: '/src/assets/images/exp_local_gastronomy_tour_1794422535302.jpg',
+    photo: gastronomyPhoto,
     spotsLeft: 4,
     description: 'Sumérgete en la cultura culinaria del Caribe colombiano guiado por una matrona tradicional en los callejones coloridos de Getsemaní.',
     schedule: ['11:00 AM', '04:30 PM', '07:00 PM']
@@ -463,7 +467,7 @@ export const INITIAL_EXPERIENCES: Experience[] = [
       'Degustación de 4 microlotes de origen',
       'Bolsa de 250g de café recién tostado de cortesía'
     ],
-    photo: '/src/assets/images/stay_cozy_urban_loft_1794422534491.jpg',
+    photo: loftPhoto,
     spotsLeft: 6,
     description: 'Aprende a diferenciar notas frutales, acidez cítrica y dulzor en los cafés de especialidad más premiados de Colombia.',
     schedule: ['09:30 AM', '02:30 PM']
@@ -490,7 +494,7 @@ export const INITIAL_EXPERIENCES: Experience[] = [
       'Careteo de snorkel en arrecife de coral',
       'Avistamiento nocturno de plancton bioluminiscente en Barú'
     ],
-    photo: '/src/assets/images/hero_stay_luxury_villa_1794422533159.jpg',
+    photo: villaPhoto,
     spotsLeft: 5,
     description: 'Pasa el día nadando en aguas turquesas del Parque Nacional Natural Corales del Rosario y termina con el espectáculo de luces vivas en el mar.',
     schedule: ['08:00 AM']
@@ -546,7 +550,7 @@ export const INITIAL_BOOKINGS: Booking[] = [
     propertyId: 'prop-1',
     propertyTitle: 'Casa Colonial con Piscina Privada en Getsemaní',
     propertyType: 'airbnb',
-    propertyPhoto: '/src/assets/images/hero_stay_luxury_villa_1794422533159.jpg',
+    propertyPhoto: villaPhoto,
     checkIn: '2026-11-15',
     checkOut: '2026-11-19',
     guests: 4,
@@ -569,7 +573,7 @@ export const INITIAL_BOOKINGS: Booking[] = [
     propertyId: 'prop-2',
     propertyTitle: 'Hotel Boutique El Poblado & Rooftop Sky Lounge',
     propertyType: 'hotel',
-    propertyPhoto: '/src/assets/images/stay_boutique_hotel_room_1794422533615.jpg',
+    propertyPhoto: hotelPhoto,
     checkIn: '2026-11-20',
     checkOut: '2026-11-23',
     guests: 2,
@@ -594,7 +598,7 @@ export const INITIAL_CONVERSATIONS: Conversation[] = [
     id: 'conv-1',
     propertyId: 'prop-1',
     propertyTitle: 'Casa Colonial Getsemaní',
-    propertyPhoto: '/src/assets/images/hero_stay_luxury_villa_1794422533159.jpg',
+    propertyPhoto: villaPhoto,
     otherParty: {
       id: 'host-101',
       name: 'María Camila (Anfitriona)',
