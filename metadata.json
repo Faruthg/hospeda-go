@@ -1,0 +1,6 @@
+{
+  "name": "Hospeda & Go - Alojamientos, Experiencias y Movilidad",
+  "description": "Plataforma todo-en-uno que integra alquiler de Airbnb, hoteles y hostales con panel de anfitrión, métricas en tiempo real, chat privado, mapa interactivo, reseñas verificadas, tours culturales y transporte privado.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
